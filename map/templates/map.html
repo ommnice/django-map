@@ -1,0 +1,159 @@
+{% load staticfiles %}
+<html>
+    <head>
+
+        <title>Django Map</title> 
+
+        <script src="{% static 'js/jquery-3.2.1.js' %}"></script>
+        <script src="{% static 'js/bootstrap-4.0.0.js' %}"></script>
+        
+        <script src="{% static 'js/leaflet-1.1.0.js' %}"></script>
+        <script src="{% static 'js/leaflet-sidebar.js' %}"></script>
+        <script src="{% static 'js/leaflet-coordinates-0.1.5.js' %}"></script>
+        <script src="{% static 'js/semicircle.js' %}"></script>
+       
+        <link rel="stylesheet" href="{% static 'css/bootstrap-4.0.0.css' %}">         
+        <link rel="stylesheet" href="{% static 'css/font-awesome-4.7.0.css' %}">
+        <link rel="stylesheet" href="{% static 'css/leaflet-1.1.0.css' %}">
+        <link rel="stylesheet" href="{% static 'css/leaflet-sidebar.css' %}">
+
+        <style>
+          .leaflet-sidebar-header, .leaflet-sidebar-tabs {
+              background-color: rgba(83, 181, 157, 0.7) !important;
+          }
+
+          .leaflet-sidebar, .leaflet-sidebar-content, .leaflet-sidebar-pane{
+              width:320px;
+              box-shadow: none !important;
+          }
+
+          .leaflet-sidebar.leaflet-touch {
+              border: none !important;
+          }
+
+          .custom {
+              padding-left: 10px !important;
+              margin-right: -20px !important;
+              justify-content: left !important;
+          }
+        </style>
+
+        <script type="text/javascript">
+
+          cell_radius = 65;
+
+            function display_map(){
+
+                mainLayer.clearLayers(); 
+
+                var csv_name = $('#csv_selector').val();
+                var url = '/show_map/?csv='+csv_name;
+
+                $.get(url, function(data, status){
+
+                  console.log(data);
+
+                  for(var i = 0; i<data.display.length; i++){
+        
+                    var cell = data.display[i]; 
+                    console.log(cell.azimuth);    
+                    console.log(cell.beamwidth);      
+                    var latLng = L.latLng(parseFloat(cell.lat), parseFloat(cell.lng));
+                                  
+                    L.semiCircle(latLng, {weight:1.3, radius: cell_radius, color: '#315fa5', info: cell})
+                     .setDirection(parseInt(cell.azimuth), parseInt(cell.beamwidth))
+                     .on('mouseover', function(e){ this.setStyle({color: '#321645'}); this.openTooltip();})
+                     .on('mouseout', function(e){ this.setStyle({color: '#315fa5'}); })
+                     .bindTooltip(cell.key)
+                     .addTo(mainLayer);
+                    
+                  };      
+
+                });
+
+            };
+        </script>   
+    </head>  
+
+    <body>
+
+      <nav id="nav_bar" class="navbar navbar-expand-md navbar-dark bg-dark" style="height:35px;">
+        <span class="navbar-brand">Django Map</span>
+        <a class="navbar-item" href="../backsatge" style="color:white;">ImportData</a>
+      </nav>  
+
+      
+      <div class="content">
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="leaflet-sidebar collapsed" style="padding-top: 20px;">
+          
+          <!-- Nav tabs -->
+          <div class="leaflet-sidebar-tabs">
+            <ul role="tablist">
+              <li><a href="#filters" role="tab"><i style="padding-top: 10px;" class="fa fa-bars"></i></a></li>
+            </ul> 
+
+          </div>
+
+          <!-- Tab panes -->
+          <div class="leaflet-sidebar-content">
+            <div class="leaflet-sidebar-pane" id="filters">
+              <h1 class="leaflet-sidebar-header">
+                <span class="leaflet-sidebar-close"><i style="padding-top: 10px;" class="fa fa-caret-left"></i></span>
+              </h1>
+
+              <div class="row form-inline" style="margin-top: 10px; margin-bottom: 8px;">
+                <label class="custom col-sm-4" style="font-size:16px;font-weight:500;">CSV : </label>
+                <select id="csv_selector" style="width:140px;font-size:16px;">
+                  {% for p in csvs %} 
+                    <option value="{{p}}">{{p}}</option>
+                  {% endfor %} 
+                </select>
+              </div>
+
+              <div class="row form-inline" style="margin-top: 10px; margin-bottom: 8px;">
+                <label class="custom col-sm-4" style="font-size:16px;font-weight:500;">Map : </label>
+                <select id="techSelector" style="width:140px;font-size:16px;">
+                  <option value="nt">NT</option>
+                </select>
+              </div>
+
+              <hr style="width:240px;margin-left: 0px;margin-top: 30px;">
+              <button type="button" class="btn btn-sm btn-outline-primary" style="margin-top:20px;line-height:1rem;width:250px;margin-left:-5px;" onclick="display_map();">Apply</button>
+            </div>
+          </div>
+
+        </div> <!-- end of sidebar -->  
+
+
+        <div id="map" class="col-md-12" style="height:700px;">
+          <script>
+
+            $('#map').css("height", ($(window).height() - $('#nav_bar').height())-20);
+
+            map = L.map('map',{zoomControl:false})
+            map.setView([25.0417, 121.5621], 16);
+
+            var carto_positron = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+                subdomains: 'abcd',
+                maxZoom: 19, 
+            }).addTo(map);
+
+            
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            L.control.coordinates({ position: 'bottomright', enableUserInput:false, useLatLngOrder: false }).addTo(map);
+            L.control.scale({ position: 'bottomright' }).addTo(map);
+
+            var sidebar = L.control.sidebar({ container: 'sidebar' }).addTo(map);
+
+            mainLayer = L.layerGroup();
+            map.addControl(mainLayer);
+
+          </script>    
+        </div> <!-- end of map -->  
+      </div>  <!-- content -->
+
+    </body>
+</html>

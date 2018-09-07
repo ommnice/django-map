@@ -1,0 +1,139 @@
+{% load staticfiles %}
+<html>
+    <head>
+
+        <title>Django Map</title> 
+
+        <script src="{% static 'js/jquery-3.2.1.js' %}"></script>
+        <script src="{% static 'js/bootstrap-4.0.0.js' %}"></script>
+       
+        <link rel="stylesheet" href="{% static 'css/bootstrap-4.0.0.css' %}">         
+        <link rel="stylesheet" href="{% static 'css/font-awesome-4.7.0.css' %}">
+
+        <script type="text/javascript"> window.CSRF_TOKEN = "{{ csrf_token }}"; </script>
+        <script type="text/javascript">
+
+            $(document).ready(function(){
+
+              $('#fake-file-button-browse').click(function() {
+                $('#files-input-upload').click();
+              }); 
+
+              $('input[id=files-input-upload]').change(function() {
+                if ($(this).val().indexOf('csv') <= -1) {
+                  alert("Only accept CSV file.");
+                }else{
+                  $('#fake-file-input-name').val(this.value);
+                  $('#fake-file-button-upload').removeAttr("disabled");
+                };
+              });
+
+
+              function getCookie(name) {
+                  var cookieValue = null;
+                  if (document.cookie && document.cookie !== '') {
+                      var cookies = document.cookie.split(';');
+                      for (var i = 0; i < cookies.length; i++) {
+                          var cookie = jQuery.trim(cookies[i]);
+                          // Does this cookie string begin with the name we want?
+                          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                              break;
+                          }
+                      }
+                  }
+                  return cookieValue;
+              };
+
+              var csrftoken = getCookie('csrftoken');
+
+              function csrfSafeMethod(method) {
+                  // these HTTP methods do not require CSRF protection
+                  return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+              };
+
+              $.ajaxSetup({
+                  beforeSend: function(xhr, settings) {
+                      if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                          xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                      }
+                  }
+              });
+
+              $('#fake-file-button-upload').click(function() {
+                // console.log('processing upload');
+
+                var formData = new FormData($('#upload_form')[0]);
+
+                $.ajax({
+                  url : '/upload_csv/',
+                  type : 'POST',
+                  data : formData ,
+                      processData: false,  // tell jQuery not to process the data
+                      contentType: false,  // tell jQuery not to set contentType
+                      success : function(data) {
+                        var response = data.display;
+                        alert(response);
+                        location.reload();
+                      }
+                  });
+
+                // console.log('processing upload done');
+              }); 
+
+          });
+
+
+
+        </script>
+
+    </head>  
+
+    <body>
+
+      <nav id="nav_bar" class="navbar navbar-expand-md navbar-dark bg-dark" style="height:35px;">
+        <span class="navbar-brand">Django Map</span>
+        <a class="navbar-item" href="../map" style="color:white;">Map</a>
+      </nav>  
+
+      
+      <div class="content">
+        <div class="col-md-12" style="margin-top: 20px;">
+          <h3>Import CSV file:</h3>
+
+         
+          
+
+            <div style="width:450px; margin-left: 20px;">
+              <form id="upload_form" class="form-inline" enctype="multipart/form-data">
+                <div class="input-group"  style="width:305px;">
+                 
+                  <input type="file" id="files-input-upload" name="upload_csv" style="display:none">
+                  <input type="text" id="fake-file-input-name" disabled="disabled" placeholder="File not selected" class="form-control" style="line-height: 1.0rem;">
+                    
+                  <span class="input-group-btn">
+                    <button id="fake-file-button-browse" type="button" class="btn btn-default" style="margin-left: 5px;">
+                    <span class="fa fa-file-text" style="line-height: 1.3rem; border-radius: 0;"></span>
+                    </button>
+                  </span>
+                          
+                  <span class="input-group-btn">
+                    <button type="button" class="btn btn-default" disabled="disabled" id="fake-file-button-upload" style="margin-left: 10px;">
+                      <span class="fa fa-arrow-up" style="line-height: 1.3rem; border-radius: 0; margin-left: "></span>
+                    </button>
+                  </span>
+                </div>
+                    
+              </form>
+            </div>
+
+
+          
+
+          
+        </div>
+        
+      </div>  <!-- content -->
+
+    </body>
+</html>
